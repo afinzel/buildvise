@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdirSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createStorage } from '../../src/storage/storage.js';
@@ -145,11 +145,16 @@ describe('storage', () => {
     it('returns all runs sorted by start time descending', () => {
       const storage = createStorage();
 
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
       const writer1 = storage.createRun('tool1', '/a', ['cmd1']);
       writer1.complete(0);
 
+      vi.setSystemTime(new Date('2025-01-01T00:00:01Z'));
       const writer2 = storage.createRun('tool2', '/b', ['cmd2']);
       writer2.complete(0);
+
+      vi.useRealTimers();
 
       const runs = storage.listRuns();
       expect(runs).toHaveLength(2);
