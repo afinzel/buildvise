@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "release": "npm run test && npm publish",
     "prepublishOnly": "npm run build"
   },
   "keywords": ["mcp", "build", "test", "lint", "diagnostics", "dotnet", "npm", "pnpm", "eslint", "claude", "model-context-protocol", "buildvise"],
