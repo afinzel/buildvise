@@ -1,0 +1,37 @@
+{
+  "name": "buildvise",
+  "version": "0.1.0",
+  "description": "Structured build, test, and lint diagnostics with 10-50x token reduction",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "buildvise": "dist/main.js"
+  },
+  "files": ["dist/**/*.js", "dist/**/*.d.ts", "dist/**/*.d.ts.map", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "release": "npm run test && npm publish",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["build", "test", "lint", "diagnostics", "dotnet", "npm", "pnpm", "eslint", "claude", "buildvise", "cli"],
+  "license": "MIT",
+  "author": "afinzel",
+  "repository": { "type": "git", "url": "https://github.com/afinzel/buildvise.git" },
+  "homepage": "https://github.com/afinzel/buildvise",
+  "bugs": { "url": "https://github.com/afinzel/buildvise/issues" },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  }
+}
