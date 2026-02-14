@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { cleanupOldRuns } from '../../src/storage/cleanup.js';
 import type { RunMeta } from '../../src/types/index.js';
 
-const TEST_DIR = '/tmp/mcp-build-cleanup-test';
+const TEST_DIR = '/tmp/buildvise-cleanup-test';
 
 const OLD_RUN_ID = '00000000-0000-4000-a000-000000000001';
 const RECENT_RUN_ID = '00000000-0000-4000-a000-000000000002';
@@ -14,7 +14,7 @@ describe('cleanupOldRuns', () => {
   beforeEach(() => {
     process.env.XDG_DATA_HOME = TEST_DIR;
     rmSync(TEST_DIR, { recursive: true, force: true });
-    mkdirSync(join(TEST_DIR, 'mcp-build/runs'), { recursive: true });
+    mkdirSync(join(TEST_DIR, 'buildvise/runs'), { recursive: true });
   });
 
   afterEach(() => {
@@ -23,7 +23,7 @@ describe('cleanupOldRuns', () => {
   });
 
   function createTestRun(runId: string, completedAt: Date): void {
-    const runDir = join(TEST_DIR, 'mcp-build/runs', runId);
+    const runDir = join(TEST_DIR, 'buildvise/runs', runId);
     mkdirSync(runDir, { recursive: true });
 
     const meta: RunMeta = {
@@ -40,7 +40,7 @@ describe('cleanupOldRuns', () => {
   }
 
   it('returns 0 when no runs directory exists', () => {
-    rmSync(join(TEST_DIR, 'mcp-build/runs'), { recursive: true, force: true });
+    rmSync(join(TEST_DIR, 'buildvise/runs'), { recursive: true, force: true });
     expect(cleanupOldRuns()).toBe(0);
   });
 
@@ -52,7 +52,7 @@ describe('cleanupOldRuns', () => {
     const removed = cleanupOldRuns();
 
     expect(removed).toBe(1);
-    expect(existsSync(join(TEST_DIR, 'mcp-build/runs', OLD_RUN_ID))).toBe(false);
+    expect(existsSync(join(TEST_DIR, 'buildvise/runs', OLD_RUN_ID))).toBe(false);
   });
 
   it('keeps runs within 14 days', () => {
@@ -63,7 +63,7 @@ describe('cleanupOldRuns', () => {
     const removed = cleanupOldRuns();
 
     expect(removed).toBe(0);
-    expect(existsSync(join(TEST_DIR, 'mcp-build/runs', RECENT_RUN_ID))).toBe(true);
+    expect(existsSync(join(TEST_DIR, 'buildvise/runs', RECENT_RUN_ID))).toBe(true);
   });
 
   it('handles mixed old and recent runs', () => {
@@ -77,21 +77,21 @@ describe('cleanupOldRuns', () => {
     const removed = cleanupOldRuns();
 
     expect(removed).toBe(1);
-    expect(existsSync(join(TEST_DIR, 'mcp-build/runs', OLD_RUN_ID))).toBe(false);
-    expect(existsSync(join(TEST_DIR, 'mcp-build/runs', RECENT_RUN_ID))).toBe(true);
+    expect(existsSync(join(TEST_DIR, 'buildvise/runs', OLD_RUN_ID))).toBe(false);
+    expect(existsSync(join(TEST_DIR, 'buildvise/runs', RECENT_RUN_ID))).toBe(true);
   });
 
   it('skips directories without meta.json', () => {
-    mkdirSync(join(TEST_DIR, 'mcp-build/runs', NO_META_RUN_ID), { recursive: true });
+    mkdirSync(join(TEST_DIR, 'buildvise/runs', NO_META_RUN_ID), { recursive: true });
 
     const removed = cleanupOldRuns();
 
     expect(removed).toBe(0);
-    expect(existsSync(join(TEST_DIR, 'mcp-build/runs', NO_META_RUN_ID))).toBe(true);
+    expect(existsSync(join(TEST_DIR, 'buildvise/runs', NO_META_RUN_ID))).toBe(true);
   });
 
   it('skips directories with non-UUID names', () => {
-    const invalidDir = join(TEST_DIR, 'mcp-build/runs/not-a-uuid');
+    const invalidDir = join(TEST_DIR, 'buildvise/runs/not-a-uuid');
     mkdirSync(invalidDir, { recursive: true });
 
     const removed = cleanupOldRuns();

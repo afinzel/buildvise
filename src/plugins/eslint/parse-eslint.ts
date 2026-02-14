@@ -3,6 +3,7 @@
  */
 
 import { createDiagnostic, type Diagnostic } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
 
 interface EslintMessage {
   ruleId: string | null;
@@ -19,12 +20,7 @@ interface EslintFileResult {
   warningCount: number;
 }
 
-export interface ParseEslintOptions {
-  tool: string;
-  output: string;
-}
-
-export function parseEslintOutput(options: ParseEslintOptions): Diagnostic[] {
+export function parseEslintOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const diagnostics: Diagnostic[] = [];
 

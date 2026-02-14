@@ -2,4 +2,4 @@
  * Jest plugin exports
  */
 
-export { parseJestOutput, parseJestSummary, type ParseJestOptions } from './parse-jest.js';
+export { parseJestOutput, parseJestSummary } from './parse-jest.js';

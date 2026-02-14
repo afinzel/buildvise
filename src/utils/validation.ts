@@ -8,6 +8,7 @@ const UUID_V4_REGEX =
 export const MAX_RAW_BYTE_LENGTH = 65536;
 export const MAX_LOG_LINE_COUNT = 500;
 export const MAX_IN_MEMORY_OUTPUT = 10 * 1024 * 1024;
+export const MAX_LINE_LENGTH = 4096;
 
 export function isValidRunId(value: string): boolean {
   return UUID_V4_REGEX.test(value);
@@ -21,4 +22,8 @@ export function validateRunId(runId: string): void {
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+export function truncateLine(line: string): string {
+  return line.length > MAX_LINE_LENGTH ? line.slice(0, MAX_LINE_LENGTH) : line;
 }

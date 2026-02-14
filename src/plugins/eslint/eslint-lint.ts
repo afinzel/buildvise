@@ -4,29 +4,22 @@
 
 import type { Plugin, PluginInput, PluginOutput } from '../types.js';
 import { executeCommand } from '../executor.js';
+import { buildInputSchema } from '../shared-schema.js';
 import { parseEslintOutput } from './parse-eslint.js';
+import { validateEslintArgs } from '../../utils/security.js';
 
 export const eslintLintPlugin: Plugin = {
   name: 'eslint.lint',
   description: 'Run ESLint to lint JavaScript/TypeScript files',
   mutatesWorkspace: false,
-  inputSchema: {
-    type: 'object',
-    properties: {
-      args: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Arguments passed to eslint (e.g. paths, --ext, --max-warnings)',
-      },
-      cwd: {
-        type: 'string',
-        description: 'Working directory',
-      },
-    },
-  },
+  inputSchema: buildInputSchema(
+    'Arguments passed to eslint (e.g. paths, --ext, --max-warnings)',
+    { includeConfirmed: false }
+  ),
 
   async execute(input: PluginInput): Promise<PluginOutput> {
     const { args, cwd, runWriter } = input;
+    validateEslintArgs(args);
 
     const result = await executeCommand({
       command: 'eslint',

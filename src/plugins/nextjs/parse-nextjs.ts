@@ -7,6 +7,8 @@
  */
 
 import { createDiagnostic, type Diagnostic } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
+import { truncateLine } from '../../utils/validation.js';
 
 // Matches file:line:col pattern (may start with ./)
 const LOCATION_REGEX = /^(\.?\/?.+?\.[a-zA-Z]+):(\d+):(\d+)\s*$/;
@@ -14,19 +16,14 @@ const LOCATION_REGEX = /^(\.?\/?.+?\.[a-zA-Z]+):(\d+):(\d+)\s*$/;
 // Matches "Type error: message"
 const TYPE_ERROR_REGEX = /^Type error:\s*(.+)$/;
 
-export interface ParseNextjsOptions {
-  tool: string;
-  output: string;
-}
-
-export function parseNextjsOutput(options: ParseNextjsOptions): Diagnostic[] {
+export function parseNextjsOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const lines = output.split(/\r?\n/);
   const diagnostics: Diagnostic[] = [];
 
   for (let i = 0; i < lines.length - 1; i++) {
-    const line = lines[i];
-    const nextLine = lines[i + 1];
+    const line = truncateLine(lines[i]);
+    const nextLine = truncateLine(lines[i + 1]);
 
     const locationMatch = line.match(LOCATION_REGEX);
     if (!locationMatch) continue;

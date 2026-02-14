@@ -17,10 +17,10 @@ export function createRunWriter(
   const runDir = getRunDir(runId);
   const startedAt = new Date().toISOString();
 
-  mkdirSync(runDir, { recursive: true });
+  mkdirSync(runDir, { recursive: true, mode: 0o700 });
 
   const logPath = getRunFile(runId, RUN_FILES.RAW_LOG);
-  writeFileSync(logPath, '');
+  writeFileSync(logPath, '', { mode: 0o600 });
 
   const index: LogIndex = {
     lines: [],
@@ -89,14 +89,14 @@ export function createRunWriter(
 
     writeDiagnostics(diagnostics: Diagnostic[]): void {
       const path = getRunFile(runId, RUN_FILES.DIAGNOSTICS);
-      writeFileSync(path, JSON.stringify(diagnostics, null, 2));
+      writeFileSync(path, JSON.stringify(diagnostics, null, 2), { mode: 0o600 });
     },
 
     complete(exitCode: number): void {
       flushRemainingBuffer();
 
       const indexPath = getRunFile(runId, RUN_FILES.RAW_INDEX);
-      writeFileSync(indexPath, JSON.stringify(index, null, 2));
+      writeFileSync(indexPath, JSON.stringify(index, null, 2), { mode: 0o600 });
 
       const meta: RunMeta = {
         runId,
@@ -109,7 +109,7 @@ export function createRunWriter(
       };
 
       const metaPath = getRunFile(runId, RUN_FILES.META);
-      writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+      writeFileSync(metaPath, JSON.stringify(meta, null, 2), { mode: 0o600 });
     },
   };
 }

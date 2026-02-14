@@ -30,7 +30,7 @@ export interface PluginOutput {
 export interface Plugin {
   /** Unique identifier (e.g. "dotnet.build") */
   readonly name: string;
-  /** Human-readable description for MCP tool discovery */
+  /** Human-readable description for tool discovery */
   readonly description: string;
   /** Whether this plugin modifies the workspace */
   readonly mutatesWorkspace: boolean;

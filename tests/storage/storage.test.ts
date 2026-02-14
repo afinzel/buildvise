@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createStorage } from '../../src/storage/storage.js';
 import { createDiagnostic } from '../../src/types/index.js';
 
-const TEST_DIR = '/tmp/mcp-build-test';
+const TEST_DIR = '/tmp/buildvise-test';
 
 describe('storage', () => {
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('storage', () => {
   describe('createStorage', () => {
     it('creates runs directory on initialization', () => {
       createStorage();
-      expect(existsSync(join(TEST_DIR, 'mcp-build/runs'))).toBe(true);
+      expect(existsSync(join(TEST_DIR, 'buildvise/runs'))).toBe(true);
     });
   });
 
@@ -45,7 +45,7 @@ describe('storage', () => {
         'build',
       ]);
 
-      const runDir = join(TEST_DIR, 'mcp-build/runs', writer.runId);
+      const runDir = join(TEST_DIR, 'buildvise/runs', writer.runId);
       expect(existsSync(runDir)).toBe(true);
     });
   });

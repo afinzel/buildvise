@@ -3,6 +3,8 @@
  */
 
 import { createDiagnostic, type Diagnostic, type TestSummary } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
+import { truncateLine } from '../../utils/validation.js';
 
 // Matches FAIL filepath
 const FAIL_REGEX = /^FAIL\s+(.+)$/;
@@ -14,16 +16,11 @@ const TEST_NAME_REGEX = /^\s*●\s+(.+)$/;
 const STACK_TRACE_REGEX = /^\s+at\s+.+\((.+):(\d+):(\d+)\)$/;
 
 // Matches expect assertion header
-const EXPECT_REGEX = /^\s+(expect\(.+\)\..+)$/;
+const EXPECT_REGEX = /^\s+(expect\(.+?\)\..+?)$/;
 
 // Matches Expected/Received lines
 const EXPECTED_REGEX = /^\s+Expected:\s*(.+)$/;
 const RECEIVED_REGEX = /^\s+Received:\s*(.+)$/;
-
-export interface ParseJestOptions {
-  tool: string;
-  output: string;
-}
 
 interface PendingFailure {
   testName: string;
@@ -36,7 +33,7 @@ interface PendingFailure {
   assertionType?: string;
 }
 
-export function parseJestOutput(options: ParseJestOptions): Diagnostic[] {
+export function parseJestOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const lines = output.split(/\r?\n/);
   const diagnostics: Diagnostic[] = [];
@@ -45,7 +42,7 @@ export function parseJestOutput(options: ParseJestOptions): Diagnostic[] {
   let pending: PendingFailure | undefined;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = truncateLine(lines[i]);
     const lineNumber = i + 1;
 
     // Track current failing file
@@ -134,7 +131,7 @@ function createFailureDiagnostic(
 }
 
 // Matches Jest summary line: Tests: 3 failed, 45 passed, 2 skipped, 50 total
-const JEST_SUMMARY_REGEX = /^Tests:\s+(.+)$/;
+const JEST_SUMMARY_REGEX = /^Tests:\s+(.{1,500})$/;
 
 /**
  * Parse Jest test summary from output, aggregating results from all projects

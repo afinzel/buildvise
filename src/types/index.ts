@@ -1,5 +1,5 @@
 /**
- * Core types for MCP Build Tools Server
+ * Core types for buildvise
  */
 
 export * from './diagnostic.js';

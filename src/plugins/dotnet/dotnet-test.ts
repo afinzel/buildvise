@@ -5,6 +5,7 @@
 import type { Plugin, PluginInput, PluginOutput } from '../types.js';
 import { executeCommand } from '../executor.js';
 import { chainParsers } from '../parse-chain.js';
+import { buildInputSchema } from '../shared-schema.js';
 import { parseBuildOutput } from './parse-build.js';
 import { parseTestOutput, parseDotnetTestSummary } from './parse-test.js';
 
@@ -14,28 +15,12 @@ export const dotnetTestPlugin: Plugin = {
     'Run .NET tests. Returns structured test results with pass/fail counts. ' +
     'Use run_raw with the returned runId to get full stack traces and detailed output.',
   mutatesWorkspace: false,
-  inputSchema: {
-    type: 'object',
-    properties: {
-      args: {
-        type: 'array',
-        items: { type: 'string' },
-        description:
-          'Arguments passed to dotnet test. Supports standard dotnet test arguments. ' +
-          'Examples: ["--filter", "FullyQualifiedName~MyTestName"] to run specific tests, ' +
-          '["--verbosity", "detailed"] for verbose output, ' +
-          '["--no-build"] to skip building before testing.',
-      },
-      cwd: {
-        type: 'string',
-        description: 'Working directory',
-      },
-      confirmed: {
-        type: 'boolean',
-        description: 'Confirmation for mutating operations',
-      },
-    },
-  },
+  inputSchema: buildInputSchema(
+    'Arguments passed to dotnet test. Supports standard dotnet test arguments. ' +
+    'Examples: ["--filter", "FullyQualifiedName~MyTestName"] to run specific tests, ' +
+    '["--verbosity", "detailed"] for verbose output, ' +
+    '["--no-build"] to skip building before testing.'
+  ),
 
   async execute(input: PluginInput): Promise<PluginOutput> {
     const { args, cwd, runWriter } = input;

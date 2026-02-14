@@ -3,6 +3,8 @@
  */
 
 import { createDiagnostic, type Diagnostic } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
+import { truncateLine } from '../../utils/validation.js';
 
 // Default format: src/foo.ts(10,5): error TS2322: message
 const TSC_DEFAULT_REGEX =
@@ -12,20 +14,13 @@ const TSC_DEFAULT_REGEX =
 const TSC_PRETTY_REGEX =
   /^(.+?):(\d+):(\d+)\s*-\s*(error|warning)\s+(TS\d+):\s*(.+)$/;
 
-export interface ParseTypescriptOptions {
-  tool: string;
-  output: string;
-}
-
-export function parseTypescriptOutput(
-  options: ParseTypescriptOptions
-): Diagnostic[] {
+export function parseTypescriptOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const lines = output.split(/\r?\n/);
   const diagnostics: Diagnostic[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = truncateLine(lines[i]);
     const lineNumber = i + 1;
 
     const defaultMatch = line.match(TSC_DEFAULT_REGEX);

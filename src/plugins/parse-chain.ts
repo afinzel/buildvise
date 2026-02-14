@@ -4,10 +4,12 @@
 
 import type { Diagnostic } from '../types/index.js';
 
-export type OutputParser = (options: {
+export interface ParseOptions {
   tool: string;
   output: string;
-}) => Diagnostic[];
+}
+
+export type OutputParser = (options: ParseOptions) => Diagnostic[];
 
 /**
  * Runs multiple parsers on the same output and combines results.

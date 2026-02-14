@@ -19,14 +19,27 @@ export function createRunReader(runId: string): RunReader | null {
     return null;
   }
 
-  const meta: RunMeta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+  let meta: RunMeta;
+  try {
+    meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+  } catch {
+    return null;
+  }
 
   function loadIndex(): LogIndex {
     const indexPath = getRunFile(runId, RUN_FILES.RAW_INDEX);
     if (!existsSync(indexPath)) {
       return { lines: [], totalLines: 0, totalBytes: 0 };
     }
-    return JSON.parse(readFileSync(indexPath, 'utf-8'));
+    try {
+      const data = JSON.parse(readFileSync(indexPath, 'utf-8'));
+      if (!Array.isArray(data.lines) || typeof data.totalLines !== 'number' || typeof data.totalBytes !== 'number') {
+        return { lines: [], totalLines: 0, totalBytes: 0 };
+      }
+      return data;
+    } catch {
+      return { lines: [], totalLines: 0, totalBytes: 0 };
+    }
   }
 
   return {
@@ -37,10 +50,19 @@ export function createRunReader(runId: string): RunReader | null {
       if (!existsSync(path)) {
         return [];
       }
-      return JSON.parse(readFileSync(path, 'utf-8'));
+      try {
+        const data = JSON.parse(readFileSync(path, 'utf-8'));
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
     },
 
     getLogBytes(start: number, length: number): Buffer {
+      if (!Number.isFinite(start) || !Number.isFinite(length) || start < 0 || length <= 0) {
+        return Buffer.alloc(0);
+      }
+
       const logPath = getRunFile(runId, RUN_FILES.RAW_LOG);
       if (!existsSync(logPath)) {
         return Buffer.alloc(0);

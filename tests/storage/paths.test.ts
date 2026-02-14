@@ -34,16 +34,16 @@ describe('paths', () => {
   });
 
   describe('getStorageRoot', () => {
-    it('returns mcp-build directory under data home', () => {
+    it('returns buildvise directory under data home', () => {
       process.env.XDG_DATA_HOME = '/data';
-      expect(getStorageRoot()).toBe('/data/mcp-build');
+      expect(getStorageRoot()).toBe('/data/buildvise');
     });
   });
 
   describe('getRunsDir', () => {
     it('returns runs directory under storage root', () => {
       process.env.XDG_DATA_HOME = '/data';
-      expect(getRunsDir()).toBe('/data/mcp-build/runs');
+      expect(getRunsDir()).toBe('/data/buildvise/runs');
     });
   });
 
@@ -51,7 +51,7 @@ describe('paths', () => {
     it('returns directory for specific run', () => {
       process.env.XDG_DATA_HOME = '/data';
       expect(getRunDir('550e8400-e29b-41d4-a716-446655440000')).toBe(
-        '/data/mcp-build/runs/550e8400-e29b-41d4-a716-446655440000'
+        '/data/buildvise/runs/550e8400-e29b-41d4-a716-446655440000'
       );
     });
 
@@ -70,8 +70,12 @@ describe('paths', () => {
     it('returns file path within run directory', () => {
       process.env.XDG_DATA_HOME = '/data';
       expect(getRunFile('550e8400-e29b-41d4-a716-446655440000', 'raw.log')).toBe(
-        '/data/mcp-build/runs/550e8400-e29b-41d4-a716-446655440000/raw.log'
+        '/data/buildvise/runs/550e8400-e29b-41d4-a716-446655440000/raw.log'
       );
+    });
+
+    it('throws on path traversal in filename', () => {
+      expect(() => getRunFile('550e8400-e29b-41d4-a716-446655440000', '../meta.json')).toThrow();
     });
   });
 

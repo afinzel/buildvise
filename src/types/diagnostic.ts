@@ -39,11 +39,6 @@ export interface Diagnostic {
   byteOffsets: ByteOffsets;
 }
 
-export interface DiagnosticSummary {
-  errorCount: number;
-  warningCount: number;
-}
-
 /**
  * Create a diagnostic with default log references
  */
