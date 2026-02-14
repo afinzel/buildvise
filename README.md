@@ -1,6 +1,26 @@
 # Buildvise
 
-Structured build, test, and lint diagnostics for AI coding agents. Returns parsed errors, warnings, and test results instead of raw console output — achieving 10-50x token reduction.
+**Goal: Minimize the token cost of build, test, and lint operations in AI coding agents.**
+
+Every time an AI agent runs `npm test` or `dotnet build` via a shell command, thousands of tokens of raw console output flow into the context window. Most of that output is noise — ANSI codes, progress bars, repeated headers. The actual signal is a handful of errors with file locations. Buildvise parses that output into structured diagnostics, achieving 10-50x token reduction.
+
+But structured output is only half the problem. How you *deliver* that output to the agent matters just as much.
+
+## Why MCP Over Subagents
+
+We started with a subagent approach — Claude spawns a "build specialist" agent that has the buildvise tools. This works, but every subagent invocation duplicates the entire Claude system prompt, all MCP server instructions, and CLAUDE.md into a brand-new conversation. That's ~20-30K tokens of overhead *before any build even runs*.
+
+We considered exposing many individual MCP tools (one per build tool), but each tool schema gets loaded into every turn of the main conversation. With 11+ tools, that's 2-5K tokens of schema bloat on every message.
+
+The sweet spot is a **single MCP tool** with an `action` parameter. One schema (~200 tokens), and the response itself tells the agent what to do next via a `hint` field — no need to preload follow-up tool schemas.
+
+| Approach | Overhead per Invocation | Where the Cost Lives |
+|----------|------------------------|---------------------|
+| Subagent | ~20,000-30,000 tokens | Full system prompt duplicated into new conversation |
+| Many MCP tools | ~2,000-5,000 tokens | Tool schemas loaded into every turn of main conversation |
+| **Single MCP tool** | **~200 tokens** | One schema in main conversation, self-describing responses |
+
+Buildvise also works as a plain CLI, so you can reference it from CLAUDE.md bash instructions without any MCP setup at all.
 
 ## Installation
 
@@ -13,46 +33,57 @@ claude plugin marketplace add afinzel/vise-tools
 claude plugin install buildvise@vise-tools
 ```
 
-This gives you a **build subagent** that Claude spawns on demand — build tool schemas only load in the subagent's context, keeping your main conversation clean.
+This registers a single `build` MCP tool that handles all operations through one endpoint.
 
-### As a Standalone MCP Server
+### Manual MCP Configuration
 
-```bash
-claude mcp add buildvise -- npx -y buildvise
-```
-
-Or add to `~/.claude.json`:
+Add to your `.mcp.json`:
 
 ```json
 {
-  "mcpServers": {
-    "buildvise": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "buildvise"]
-    }
+  "buildvise": {
+    "command": "npx",
+    "args": ["-y", "buildvise", "mcp"]
   }
 }
 ```
 
-## Available Tools
+### CLI Usage
 
-| Tool | Description | Mutates Workspace |
-|------|-------------|-------------------|
-| `dotnet_build` | Build .NET projects | No |
-| `dotnet_test` | Run .NET tests | No |
-| `npm_install` | Install npm packages | Yes |
-| `npm_build` | Run npm build script | No |
-| `npm_test` | Run npm test script | No |
-| `npm_run` | Run npm scripts | Varies |
-| `pnpm_install` | Install pnpm packages | Yes |
-| `pnpm_build` | Run pnpm build script | No |
-| `pnpm_test` | Run pnpm test script | No |
-| `pnpm_run` | Run pnpm scripts | Varies |
-| `eslint_lint` | Run ESLint on files | No |
-| `run_raw` | Get raw log output by byte offset | No |
-| `run_logRange` | Get log lines by line number | No |
-| `report_issue` | File a GitHub issue for Buildvise | No |
+Buildvise also works as a standalone CLI for use in scripts or CLAUDE.md instructions:
+
+```bash
+npx -y buildvise exec npm.build --cwd /path/to/project
+npx -y buildvise exec npm.test --cwd /path/to/project -- --coverage
+npx -y buildvise list
+npx -y buildvise log-range <runId> --start 1 --count 20
+```
+
+## The `build` Tool
+
+One tool, three actions:
+
+| Action | Description | Required Params |
+|--------|-------------|-----------------|
+| `exec` | Run a build/test/lint tool | `tool` |
+| `log` | View log lines from a previous run | `runId` |
+| `list` | Show available tools | (none) |
+
+### Available Tools (for `exec`)
+
+| Tool | Description |
+|------|-------------|
+| `dotnet.build` | Build .NET projects |
+| `dotnet.test` | Run .NET tests |
+| `npm.install` | Install npm packages |
+| `npm.build` | Run npm build script |
+| `npm.test` | Run npm test script |
+| `npm.run` | Run npm scripts |
+| `pnpm.install` | Install pnpm packages |
+| `pnpm.build` | Run pnpm build script |
+| `pnpm.test` | Run pnpm test script |
+| `pnpm.run` | Run pnpm scripts |
+| `eslint.lint` | Run ESLint on files |
 
 ## How It Works
 
@@ -62,20 +93,19 @@ Instead of returning raw build output (thousands of tokens), Buildvise parses th
 {
   "success": false,
   "runId": "abc123",
-  "summary": { "errors": 2, "warnings": 1 },
   "errors": [
     {
       "file": "src/app.ts",
       "line": 42,
-      "severity": "error",
       "code": "TS2345",
       "message": "Argument of type 'string' is not assignable to parameter of type 'number'."
     }
-  ]
+  ],
+  "hint": "To view full logs: { action: 'log', runId: 'abc123' }. Report issues: https://github.com/afinzel/buildvise/issues"
 }
 ```
 
-When the structured diagnostics aren't enough, use `run_raw` or `run_logRange` with the `runId` to access the full output.
+The `hint` field tells the agent exactly what to do next — no need to remember separate tool names or API patterns. On success, the hint includes just the issue reporting URL.
 
 ## Development
 
