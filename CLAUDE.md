@@ -1,6 +1,6 @@
 # Buildvise
 
-An MCP server providing structured build, test, lint, and package-management diagnostics with 10-50x token reduction.
+A CLI tool providing structured build, test, lint, and package-management diagnostics with 10-50x token reduction.
 
 ## Specifications
 
@@ -54,6 +54,8 @@ Implementation specs are in `requirements/spec/`. Load the relevant spec for the
 - Run tests before committing
 
 ## Development
+
+Use the buildvise agent (`buildvise:build`) for build, test, typecheck, and lint operations instead of running shell commands directly.
 
 ```bash
 npm run build      # Compile TypeScript
