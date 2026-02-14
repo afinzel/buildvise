@@ -2,4 +2,4 @@
  * Vitest plugin exports
  */
 
-export { parseVitestOutput, parseVitestSummary, type ParseVitestOptions } from './parse-vitest.js';
+export { parseVitestOutput, parseVitestSummary } from './parse-vitest.js';

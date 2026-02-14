@@ -8,7 +8,7 @@ import type { TestSummary } from './test-summary.js';
 /**
  * Simplified diagnostic for LLM consumption
  */
-export interface SimpleDiagnostic {
+interface SimpleDiagnostic {
   message: string;
   file?: string;
   line?: number;
@@ -27,6 +27,8 @@ export interface ToolResponse {
   runId: string;
   /** Test summary (for test plugins) */
   summary?: TestSummary;
+  /** Self-describing follow-up hint (attached by MCP handler) */
+  hint?: string;
 }
 
 /**
@@ -41,7 +43,7 @@ function simplifyDiagnostic(d: Diagnostic): SimpleDiagnostic {
   return simple;
 }
 
-export interface ResponseOptions {
+interface ResponseOptions {
   summary?: TestSummary;
 }
 

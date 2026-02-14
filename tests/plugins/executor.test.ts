@@ -6,6 +6,7 @@ import {
   getUserPathFromShell,
   getFallbackPaths,
   resetPathCache,
+  filterSensitiveEnv,
 } from '../../src/plugins/executor.js';
 import { createStorage } from '../../src/storage/index.js';
 import { MAX_IN_MEMORY_OUTPUT } from '../../src/utils/validation.js';
@@ -256,5 +257,62 @@ describe('resetPathCache', () => {
     // Should work without error (cache was cleared)
     const path = getUserPathFromShell();
     expect(path).not.toBeNull();
+  });
+});
+
+describe('filterSensitiveEnv', () => {
+  it('removes token variables', () => {
+    const env = { HOME: '/home/user', NPM_TOKEN: 'secret123', PATH: '/usr/bin' };
+    const filtered = filterSensitiveEnv(env as NodeJS.ProcessEnv);
+    expect(filtered['HOME']).toBe('/home/user');
+    expect(filtered['PATH']).toBe('/usr/bin');
+    expect(filtered['NPM_TOKEN']).toBeUndefined();
+  });
+
+  it('removes AWS credentials', () => {
+    const env = { HOME: '/home/user', AWS_ACCESS_KEY_ID: 'AKIA...', AWS_SECRET_ACCESS_KEY: 'secret' };
+    const filtered = filterSensitiveEnv(env as NodeJS.ProcessEnv);
+    expect(filtered['HOME']).toBe('/home/user');
+    expect(filtered['AWS_ACCESS_KEY_ID']).toBeUndefined();
+    expect(filtered['AWS_SECRET_ACCESS_KEY']).toBeUndefined();
+  });
+
+  it('removes GitHub tokens', () => {
+    const env = { GITHUB_TOKEN: 'ghp_xxx', GH_TOKEN: 'ghp_yyy' };
+    const filtered = filterSensitiveEnv(env as NodeJS.ProcessEnv);
+    expect(filtered['GITHUB_TOKEN']).toBeUndefined();
+    expect(filtered['GH_TOKEN']).toBeUndefined();
+  });
+
+  it('removes password and secret variables', () => {
+    const env = { DB_PASSWORD: 'pass', MY_SECRET: 'shh', API_KEY: 'key123' };
+    const filtered = filterSensitiveEnv(env as NodeJS.ProcessEnv);
+    expect(filtered['DB_PASSWORD']).toBeUndefined();
+    expect(filtered['MY_SECRET']).toBeUndefined();
+    expect(filtered['API_KEY']).toBeUndefined();
+  });
+
+  it('removes database URLs', () => {
+    const env = { DATABASE_URL: 'postgres://user:pass@host/db', REDIS_URL: 'redis://host' };
+    const filtered = filterSensitiveEnv(env as NodeJS.ProcessEnv);
+    expect(filtered['DATABASE_URL']).toBeUndefined();
+    expect(filtered['REDIS_URL']).toBeUndefined();
+  });
+
+  it('preserves safe environment variables', () => {
+    const env = {
+      HOME: '/home/user',
+      USER: 'user',
+      SHELL: '/bin/bash',
+      LANG: 'en_US.UTF-8',
+      NODE_ENV: 'production',
+      CI: 'true',
+      TERM: 'xterm-256color',
+      FORCE_COLOR: '1',
+    };
+    const filtered = filterSensitiveEnv(env as NodeJS.ProcessEnv);
+    expect(Object.keys(filtered)).toHaveLength(8);
+    expect(filtered['NODE_ENV']).toBe('production');
+    expect(filtered['CI']).toBe('true');
   });
 });

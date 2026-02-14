@@ -3,6 +3,8 @@
  */
 
 import { createDiagnostic, type Diagnostic, type TestSummary } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
+import { truncateLine } from '../../utils/validation.js';
 
 // Strip ANSI escape codes
 const ANSI_REGEX = /\x1b\[[0-9;]*m/g;
@@ -31,11 +33,6 @@ const RECEIVED_VALUE_REGEX = /^\s*\+\s{3}(.+)$/;
 // Matches the "Failed Tests" section header
 const FAILED_TESTS_HEADER = /^ Failed Tests\s*(\d+)?/;
 
-export interface ParseVitestOptions {
-  tool: string;
-  output: string;
-}
-
 interface PendingFailure {
   testName: string;
   testNameLine: number;
@@ -47,7 +44,7 @@ interface PendingFailure {
   errorMessage?: string;
 }
 
-export function parseVitestOutput(options: ParseVitestOptions): Diagnostic[] {
+export function parseVitestOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const cleaned = output.replace(ANSI_REGEX, '');
   const lines = cleaned.split(/\r?\n/);
@@ -57,7 +54,7 @@ export function parseVitestOutput(options: ParseVitestOptions): Diagnostic[] {
   let inDiffBlock = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = truncateLine(lines[i]);
     const lineNumber = i + 1;
 
     // Detect "Failed Tests" section (skip header line)
@@ -160,7 +157,7 @@ function createFailureDiagnostic(tool: string, failure: PendingFailure): Diagnos
 }
 
 // Matches vitest summary: "Tests  N failed | N passed (total)" or "Tests  N failed | N passed | N skipped (total)"
-const VITEST_SUMMARY_REGEX = /^\s*Tests\s+(.+)\((\d+)\)\s*$/;
+const VITEST_SUMMARY_REGEX = /^\s*Tests\s+(.{1,500})\((\d+)\)\s*$/;
 
 /**
  * Parse Vitest test summary from output

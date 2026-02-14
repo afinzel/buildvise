@@ -3,6 +3,8 @@
  */
 
 import { createDiagnostic, type Diagnostic, type Severity } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
+import { truncateLine } from '../../utils/validation.js';
 
 // Source file diagnostics: path/File.cs(line,col): error CS1234: message
 const MSBUILD_DIAGNOSTIC_REGEX =
@@ -13,21 +15,17 @@ const MSBUILD_DIAGNOSTIC_REGEX =
 const MSBUILD_PROJECT_ERROR_REGEX =
   /^(.+?)\s*:\s*(error|warning)\s+(\w+):\s*(.+)$/;
 
-export interface ParseBuildOptions {
-  tool: string;
-  output: string;
-}
-
-export interface ParsedLine {
+interface ParsedLine {
   lineNumber: number;
   diagnostic: Diagnostic | null;
 }
 
 export function parseBuildLine(
-  line: string,
+  rawLine: string,
   lineNumber: number,
   tool: string
 ): ParsedLine {
+  const line = truncateLine(rawLine);
   // Try source file diagnostic first (has line/column)
   const sourceMatch = line.match(MSBUILD_DIAGNOSTIC_REGEX);
   if (sourceMatch) {
@@ -69,7 +67,7 @@ export function parseBuildLine(
   return { lineNumber, diagnostic: null };
 }
 
-export function parseBuildOutput(options: ParseBuildOptions): Diagnostic[] {
+export function parseBuildOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const lines = output.split(/\r?\n/);
   const diagnostics: Diagnostic[] = [];

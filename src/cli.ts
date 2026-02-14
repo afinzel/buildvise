@@ -2,7 +2,6 @@
  * CLI interface for buildvise
  */
 
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import {
   createSuccessResponse,
@@ -13,6 +12,7 @@ import {
 import type { PluginRegistry } from './plugins/index.js';
 import type { StorageAPI } from './storage/index.js';
 import { isValidRunId, clamp, MAX_RAW_BYTE_LENGTH, MAX_LOG_LINE_COUNT } from './utils/validation.js';
+import { validateCwd } from './utils/security.js';
 
 const DEFAULT_BYTE_LENGTH = 4096;
 const DEFAULT_LINE_COUNT = 50;
@@ -55,12 +55,14 @@ export function createCli(deps: CliDependencies) {
     const rawCwd = cwd ?? defaultCwd;
     const resolvedCwd = path.isAbsolute(rawCwd) ? rawCwd : path.resolve(defaultCwd, rawCwd);
 
-    if (!existsSync(resolvedCwd)) {
+    try {
+      validateCwd(resolvedCwd, cwd, defaultCwd);
+    } catch (error) {
       return createErrorResponse('', [
         createDiagnostic({
           tool: plugin.name,
           severity: 'error',
-          message: `Working directory does not exist: ${resolvedCwd}`,
+          message: error instanceof Error ? error.message : String(error),
           code: 'INVALID_CWD',
         }),
       ]);
@@ -270,9 +272,11 @@ function parseRawArgs(args: string[]): ParsedArgs {
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--offset' && i + 1 < args.length) {
-      result.offset = parseInt(args[++i], 10);
+      const parsed = parseInt(args[++i], 10);
+      result.offset = Number.isNaN(parsed) ? undefined : parsed;
     } else if (args[i] === '--length' && i + 1 < args.length) {
-      result.length = parseInt(args[++i], 10);
+      const parsed = parseInt(args[++i], 10);
+      result.length = Number.isNaN(parsed) ? undefined : parsed;
     } else if (!result.runId) {
       result.runId = args[i];
     }
@@ -295,9 +299,11 @@ function parseLogRangeArgs(args: string[]): ParsedArgs {
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--start' && i + 1 < args.length) {
-      result.startLine = parseInt(args[++i], 10);
+      const parsed = parseInt(args[++i], 10);
+      result.startLine = Number.isNaN(parsed) ? 1 : parsed;
     } else if (args[i] === '--count' && i + 1 < args.length) {
-      result.lineCount = parseInt(args[++i], 10);
+      const parsed = parseInt(args[++i], 10);
+      result.lineCount = Number.isNaN(parsed) ? undefined : parsed;
     } else if (!result.runId) {
       result.runId = args[i];
     }

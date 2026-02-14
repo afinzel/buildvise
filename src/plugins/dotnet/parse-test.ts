@@ -3,6 +3,8 @@
  */
 
 import { createDiagnostic, type Diagnostic, type TestSummary } from '../../types/index.js';
+import type { ParseOptions } from '../parse-chain.js';
+import { truncateLine } from '../../utils/validation.js';
 
 const FAILED_TEST_REGEX = /^\s*Failed\s+(.+?)\s+\[/;
 const STACK_TRACE_REGEX = /in\s+(.+?):line\s+(\d+)/;
@@ -16,12 +18,7 @@ interface TestFailure {
   endLine: number;
 }
 
-export interface ParseTestOptions {
-  tool: string;
-  output: string;
-}
-
-export function parseTestOutput(options: ParseTestOptions): Diagnostic[] {
+export function parseTestOutput(options: ParseOptions): Diagnostic[] {
   const { tool, output } = options;
   const lines = output.split(/\r?\n/);
   const diagnostics: Diagnostic[] = [];
@@ -29,7 +26,7 @@ export function parseTestOutput(options: ParseTestOptions): Diagnostic[] {
 
   let i = 0;
   while (i < lines.length) {
-    const line = lines[i];
+    const line = truncateLine(lines[i]);
     const failedMatch = line.match(FAILED_TEST_REGEX);
 
     if (failedMatch) {
@@ -42,7 +39,7 @@ export function parseTestOutput(options: ParseTestOptions): Diagnostic[] {
 
       i++;
       while (i < lines.length) {
-        const nextLine = lines[i];
+        const nextLine = truncateLine(lines[i]);
 
         if (nextLine.match(FAILED_TEST_REGEX) || nextLine.trim() === '') {
           if (nextLine.trim() === '') {

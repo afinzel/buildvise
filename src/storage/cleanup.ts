@@ -35,10 +35,6 @@ export function cleanupOldRuns(): number {
 
     const metaPath = getRunFile(runId, RUN_FILES.META);
 
-    if (!existsSync(metaPath)) {
-      continue;
-    }
-
     try {
       const meta: RunMeta = JSON.parse(readFileSync(metaPath, 'utf-8'));
       const completedAt = new Date(meta.completedAt).getTime();

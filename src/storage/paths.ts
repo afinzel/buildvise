@@ -3,11 +3,12 @@
  */
 
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { validateRunId } from '../utils/validation.js';
+import { validateRunFilename } from '../utils/security.js';
 
 const XDG_DATA_HOME_DEFAULT = '.local/share';
-const APP_NAME = 'mcp-build';
+const APP_NAME = 'buildvise';
 const RUNS_DIR = 'runs';
 
 export function getDataHome(): string {
@@ -27,13 +28,23 @@ export function getRunDir(runId: string): string {
   return join(getRunsDir(), runId);
 }
 
-export function getRunFile(runId: string, filename: string): string {
-  return join(getRunDir(runId), filename);
-}
-
 export const RUN_FILES = {
   RAW_LOG: 'raw.log',
   RAW_INDEX: 'raw.index.json',
   DIAGNOSTICS: 'diagnostics.json',
   META: 'meta.json',
 } as const;
+
+const ALLOWED_RUN_FILES = new Set(Object.values(RUN_FILES));
+
+export function getRunFile(runId: string, filename: string): string {
+  validateRunFilename(filename, ALLOWED_RUN_FILES);
+  const runDir = getRunDir(runId);
+  const filePath = join(runDir, filename);
+  const resolvedDir = resolve(runDir);
+  const resolvedFile = resolve(filePath);
+  if (!resolvedFile.startsWith(resolvedDir + sep) && resolvedFile !== resolvedDir) {
+    throw new Error('Path traversal detected');
+  }
+  return filePath;
+}

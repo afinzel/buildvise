@@ -6,6 +6,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import type { RunWriter } from '../storage/index.js';
 import { MAX_IN_MEMORY_OUTPUT } from '../utils/validation.js';
+import { validateShellPath } from '../utils/security.js';
 
 export interface ExecuteCommandOptions {
   command: string;
@@ -32,24 +33,12 @@ export function getUserPathFromShell(): string | null {
   }
 
   if (process.platform === 'win32') {
-    // On Windows, try to get PATH from cmd
-    try {
-      const result = spawnSync('cmd', ['/c', 'echo %PATH%'], {
-        encoding: 'utf-8',
-        timeout: 5000,
-      });
-      if (result.status === 0 && result.stdout) {
-        cachedUserPath = result.stdout.trim();
-        return cachedUserPath;
-      }
-    } catch {
-      // Fall through to return null
-    }
-    return null;
+    cachedUserPath = process.env['PATH'] ?? null;
+    return cachedUserPath;
   }
 
   // macOS/Linux: get PATH from user's login shell
-  const shell = process.env['SHELL'] ?? '/bin/sh';
+  const shell = validateShellPath(process.env['SHELL']);
   try {
     const result = spawnSync(shell, ['-l', '-c', 'echo $PATH'], {
       encoding: 'utf-8',
@@ -83,6 +72,45 @@ export function getFallbackPaths(): string[] {
   ];
 }
 
+const SENSITIVE_ENV_PATTERNS = [
+  /token/i,
+  /secret/i,
+  /password/i,
+  /passwd/i,
+  /credential/i,
+  /private.?key/i,
+  /api.?key/i,
+  /auth/i,
+  /^AWS_/i,
+  /^NPM_/i,
+  /^GITHUB_/i,
+  /^GH_/i,
+  /^DOCKER_/i,
+  /^AZURE_/i,
+  /^GCP_/i,
+  /^GOOGLE_/i,
+  /^HEROKU_/i,
+  /^VERCEL_/i,
+  /^NETLIFY_/i,
+  /^SENTRY_/i,
+  /^STRIPE_/i,
+  /^TWILIO_/i,
+  /^SENDGRID_/i,
+  /^DATABASE_URL$/i,
+  /^REDIS_URL$/i,
+  /^MONGODB_URI$/i,
+  /^CONNECTION_STRING$/i,
+];
+
+export function filterSensitiveEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const filtered: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (SENSITIVE_ENV_PATTERNS.some((pattern) => pattern.test(key))) continue;
+    filtered[key] = value;
+  }
+  return filtered;
+}
+
 function buildEnvWithNodeModulesBin(cwd: string): NodeJS.ProcessEnv {
   const nodeModulesBin = path.join(cwd, 'node_modules', '.bin');
   const pathSeparator = process.platform === 'win32' ? ';' : ':';
@@ -106,7 +134,7 @@ function buildEnvWithNodeModulesBin(cwd: string): NodeJS.ProcessEnv {
   }
 
   return {
-    ...process.env,
+    ...filterSensitiveEnv(process.env),
     PATH: finalPath,
   };
 }
