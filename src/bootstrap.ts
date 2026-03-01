@@ -6,6 +6,7 @@ import { createStorage } from './storage/index.js';
 import {
   createPluginRegistry,
   dotnetBuildPlugin,
+  dotnetRestorePlugin,
   dotnetTestPlugin,
   npmInstallPlugin,
   npmBuildPlugin,
@@ -31,6 +32,7 @@ export function bootstrap(): BootstrapResult {
 
   const registry = createPluginRegistry();
   registry.register(dotnetBuildPlugin);
+  registry.register(dotnetRestorePlugin);
   registry.register(dotnetTestPlugin);
   registry.register(npmInstallPlugin);
   registry.register(npmBuildPlugin);
